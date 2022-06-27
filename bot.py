@@ -2,9 +2,10 @@ from cgitb import text
 from email import message
 from importlib.metadata import entry_points
 from tkinter import Entry
-from telegram import Chat, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import (Chat, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton,
+                      InlineKeyboardMarkup, ReplyKeyboardMarkup)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
-                        RegexHandler, ConversationHandler)
+                        RegexHandler, ConversationHandler, CallbackQueryHandler)
 
 STATE1 = 1
 STATE2 = 2
@@ -22,7 +23,7 @@ def welcome(update, context):
 
 def feedback(update, context):
     try:
-        message = 'Por favor, digite um feedback para o nosso tutorial:'
+        message = 'Por favor, digite um feedback para a nossa conversa:'
         update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup([], one_time_keyboard=True)) 
         return STATE1
     except Exception as e:
@@ -32,7 +33,7 @@ def feedback(update, context):
 def inputFeedback(update, context):
     feedback = update.message.text
     print(feedback)
-    if len(feedback) < 10:
+    if len(feedback) < 5:
         message = """Seu feedback foi muito curtinho... 
                         \nInforma mais pra gente, por favor?"""
         context.bot.send_message(chat_id=update.effective_chat.id, text=message)
@@ -47,6 +48,21 @@ def inputFeedback2(update, context):
     message = "Muito obrigada pelo seu feedback!"
     context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
+def askForNota(update, context):
+    question = 'Qual nota você dá para a assistencia?'
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("👎 1", callback_data='1'),
+          InlineKeyboardButton("2", callback_data='2'),
+          InlineKeyboardButton("🤔 3", callback_data='3'),
+          InlineKeyboardButton("4", callback_data='4'),
+          InlineKeyboardButton("👍 5", callback_data='5')]])
+    update.message.reply_text(question, reply_markup=keyboard)
+
+def getNota(update, context):
+    query = update.callback_query
+    print(str(query.data))
+    message = 'Obrigada pela sua nota: ' + str(query.data) 
+    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
 def cancel(update, context):
     return ConversationHandler.END
@@ -59,6 +75,8 @@ def main():
         updater = Updater(token=token, use_context=True)
 
         updater.dispatcher.add_handler(CommandHandler('start', welcome))
+        updater.dispatcher.add_handler(CommandHandler('nota', askForNota))
+        updater.dispatcher.add_handler(CallbackQueryHandler(getNota))
 
         conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('feedback', feedback)],
@@ -74,6 +92,7 @@ def main():
         updater.idle()
     except Exception as e:
         print(str(e))
+        
 
 
 if __name__ == "__main__":
