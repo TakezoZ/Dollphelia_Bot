@@ -1,4 +1,3 @@
-import requests
 from cgitb import text
 from email import message
 from importlib.metadata import entry_points
